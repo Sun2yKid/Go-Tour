@@ -1,5 +1,4 @@
 // reference to solution from https://github.com/golang/tour/blob/master/solutions/webcrawler.go
-
 package main
 
 import (
@@ -54,18 +53,20 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 	}
 	fmt.Printf("Found: %s %q\n", url, body)
 
-	done := make(chan bool)
+	done := make(chan string) //bool
 	for i, u := range urls {
 		fmt.Printf("-> Crawling child %v/%v of %v: %v.\n", i+1, len(urls), url, u)
 		go func(url string) {
 			Crawl(url, depth-1, fetcher)
-			done <- true
+			done <- url //true
 		}(u)
 	}
 
 	for i, u := range urls {
 		fmt.Printf("<- [%v] %v/%v Waiting for child %v.\n", url, i+1, len(urls), u)
-		<-done // block waiting
+		//<-done // block waiting
+		_u := <-done
+		fmt.Printf("...[%v] Child %v Done...\n", url, _u)
 	}
 	fmt.Printf("Done with %v\n", url)
 	return
@@ -132,9 +133,7 @@ var fetcher = fakeFetcher{
 	},
 }
 
-
 /* Console output:
-
 Fetch: https://golang.org/
 Found: https://golang.org/ "The Go Programming Language"
 -> Crawling child 1/2 of https://golang.org/: https://golang.org/pkg/.
@@ -142,6 +141,7 @@ Found: https://golang.org/ "The Go Programming Language"
 <- [https://golang.org/] 1/2 Waiting for child https://golang.org/pkg/.
 Fetch: https://golang.org/cmd/
 Error on https://golang.org/cmd/: not found: https://golang.org/cmd/
+...[https://golang.org/] Child https://golang.org/cmd/ Done...
 <- [https://golang.org/] 2/2 Waiting for child https://golang.org/cmd/.
 Fetch: https://golang.org/pkg/
 Found: https://golang.org/pkg/ "Packages"
@@ -156,10 +156,13 @@ Found: https://golang.org/pkg/os/ "Package os"
 -> Crawling child 2/2 of https://golang.org/pkg/os/: https://golang.org/pkg/.
 <- [https://golang.org/pkg/os/] 1/2 Waiting for child https://golang.org/.
 Already fetched: https://golang.org/pkg/
+...[https://golang.org/pkg/os/] Child https://golang.org/pkg/ Done...
 <- [https://golang.org/pkg/os/] 2/2 Waiting for child https://golang.org/pkg/.
 Already fetched: https://golang.org/
+...[https://golang.org/pkg/] Child https://golang.org/ Done...
 <- [https://golang.org/pkg/] 2/4 Waiting for child https://golang.org/cmd/.
 Already fetched: https://golang.org/cmd/
+...[https://golang.org/pkg/] Child https://golang.org/cmd/ Done...
 <- [https://golang.org/pkg/] 3/4 Waiting for child https://golang.org/pkg/fmt/.
 Fetch: https://golang.org/pkg/fmt/
 Found: https://golang.org/pkg/fmt/ "Package fmt"
@@ -167,19 +170,26 @@ Found: https://golang.org/pkg/fmt/ "Package fmt"
 -> Crawling child 2/2 of https://golang.org/pkg/fmt/: https://golang.org/pkg/.
 <- [https://golang.org/pkg/fmt/] 1/2 Waiting for child https://golang.org/.
 Already fetched: https://golang.org/pkg/
+...[https://golang.org/pkg/fmt/] Child https://golang.org/pkg/ Done...
 <- [https://golang.org/pkg/fmt/] 2/2 Waiting for child https://golang.org/pkg/.
 Already fetched: https://golang.org/
+...[https://golang.org/pkg/os/] Child https://golang.org/ Done...
 Done with https://golang.org/pkg/os/
+...[https://golang.org/pkg/] Child https://golang.org/pkg/os/ Done...
 <- [https://golang.org/pkg/] 4/4 Waiting for child https://golang.org/pkg/os/.
 Already fetched: https://golang.org/
+...[https://golang.org/pkg/fmt/] Child https://golang.org/ Done...
 Done with https://golang.org/pkg/fmt/
+...[https://golang.org/pkg/] Child https://golang.org/pkg/fmt/ Done...
 Done with https://golang.org/pkg/
+...[https://golang.org/] Child https://golang.org/pkg/ Done...
 Done with https://golang.org/
 Fetching stats
 --------------------
-https://golang.org/ was fetched!
-https://golang.org/cmd/ failed: not found: https://golang.org/cmd/
 https://golang.org/pkg/ was fetched!
 https://golang.org/pkg/os/ was fetched!
 https://golang.org/pkg/fmt/ was fetched!
+https://golang.org/ was fetched!
+https://golang.org/cmd/ failed: not found: https://golang.org/cmd/
+
 */
